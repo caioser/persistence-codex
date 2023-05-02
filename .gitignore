@@ -5,4 +5,5 @@ poly_calendar_js/*.svg
 __pycache__
 
 # venvs
-for-first-jango
+#for-first-jango
+venvs
