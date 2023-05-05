@@ -19,20 +19,40 @@ class Resumo:
             a += 1
         self.period = datetime(a, m, d)
 
+    def info(self):
+        print(f"""Totais:
+a pagar: {self.total_valor:,.2f}
+por dia: {self.total_pdia:,.2f}
+saldo restante: {self.money_after_pay:,.2f}
+restante: {self.restante_valor:,.2f}
+restante por dia: {self.restante_pdia:,.2f}
+dias ateh: {self.toPay["dias ateh"].min()}
+""")
+        
     def a(self):
         self.df.sort_values(by="vencimento", inplace=True)
         self.df.reset_index(drop=True, inplace=True)
         self.d = self.df[self.df["vencimento"] < self.period]
-        self.d = self.d.assign(proportions=self.d["valor"] / self.d["valor"].sum())
-        self.d = self.d.assign(restante=(self.d["valor"].sum() + self.money)*self.d["proportions"])
-        self.d = self.d.assign(restante_pdia=(self.d["valor"].sum() + self.money)*self.d["proportions"]/self.d["dias ateh"])
-        self.d = self.d.assign(cumulativo=[self.d.loc[:i+1, "restante_pdia"].sum() for i in self.d.index])
-        self.d = self.d.assign(valor_cumulativo=[self.d.loc[:i+1, "valor"].sum() for i in self.d.index])
+        self.d = self.d.assign(valor_cumulativo=[self.d.loc[:i, "valor"].sum() for i in self.d.index])
+
+        self.canPay = self.d[self.d["valor_cumulativo"] + self.money >= 0]
+        self.canPay.loc[:, ["por_dia", "proportions", "restante", "restante_pdia", "cumulativo", "valor_cumulativo"]] = 0
+        self.money_after_pay = self.canPay["valor"].sum() + self.money
+
+        self.toPay = self.d[self.d["valor_cumulativo"] + self.money < 0]
+        self.toPay["valor_cumulativo"] = [self.toPay.loc[:i, "valor"].sum() for i in self.toPay.index]
+        self.toPay = self.toPay.assign(proportions=self.toPay["valor"] / self.toPay["valor"].sum())
+        self.toPay = self.toPay.assign(restante=(self.toPay["valor"].sum() + self.money_after_pay)*self.toPay["proportions"])
+        self.toPay = self.toPay.assign(restante_pdia=(self.toPay["valor"].sum() + self.money_after_pay)*self.toPay["proportions"]/self.toPay["dias ateh"])
+        self.toPay = self.toPay.assign(cumulativo=[self.toPay.loc[:i, "restante_pdia"].sum() for i in self.toPay.index])
         
-        self.restante_valor = self.d["restante"].sum()
-        self.restante_pdia = self.d["restante_pdia"].sum()
-        self.total_pdia = self.d["por_dia"].sum()
-        self.total_valor = self.d["valor"].sum()
+
+        self.restante_valor = self.toPay["restante"].sum()
+        self.restante_pdia = self.toPay["restante_pdia"].sum()
+        self.total_pdia = self.toPay["por_dia"].sum()
+        self.total_valor = self.toPay["valor"].sum()
+
+        self.d = pd.concat([self.canPay, self.toPay])
 
 
         
@@ -95,11 +115,17 @@ dividas = [
 # for x in dividas:
 #     print(x.df)
 
-z = Resumo(dividas, money=2003.38)
+z = Resumo(dividas, money=1949.08)
 
-print(z.df)
-z.set_period(m=6)
+# print(z.df)
+z.set_period(a=2023+10, m=12, d=31)
 z.a()
+d=z.d
+for x, y in zip([0,60,120], [60,120,len(d)-1]):
+    print(d.iloc[x:y, [0,1,3,4,5,6,7,8,9]])
+
+z.info()
+
 
 
 
