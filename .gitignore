@@ -1,9 +1,9 @@
 # Not relevant things in:
 poly_calendar_js/*.svg
 
-# caches
 __pycache__
-
-# venvs
-#for-first-jango
 venvs
+.env
+*.log
+# folder with sensitive data
+data
